@@ -1,15 +1,17 @@
 {
-  "lastUpdated": "2026-06-26",
-  "source": "Yahoo Sports / NBC Sports / Al Jazeera - 24 teams confirmed into R32; final group matches conclude June 27, R32 begins June 28",
-  "note": "team -> furthest stage reached. 0=out,1=group/R32,2=R16,3=QF,4=SF,5=Final,6=Champion. Only teams that reached at least stage 1 are listed. Czech Republic and Turkey confirmed eliminated (omitted=0). Uncertain teams (Algeria, Austria, Belgium, Croatia, Egypt, England, Ghana, Iran, Portugal, Scotland, Senegal, Spain, Uruguay) omitted pending final group matches.",
+  "lastUpdated": "2026-06-27",
+  "source": "ESPN public API (site.api.espn.com) via GitHub Actions",
+  "note": "team -> furthest stage reached. 0=out,1=group/R32,2=R16,3=QF,4=SF,5=Final,6=Champion.",
   "stages": {
     "Argentina": 1,
     "Australia": 1,
+    "Belgium": 1,
     "Bosnia and Herzegovina": 1,
     "Brazil": 1,
     "Canada": 1,
     "Colombia": 1,
     "Ecuador": 1,
+    "Egypt": 1,
     "France": 1,
     "Germany": 1,
     "Ivory Coast": 1,
@@ -19,6 +21,7 @@
     "Netherlands": 1,
     "Norway": 1,
     "South Korea": 1,
+    "Spain": 1,
     "Sweden": 1,
     "Switzerland": 1,
     "United States": 1
