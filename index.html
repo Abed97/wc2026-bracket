@@ -99,14 +99,16 @@
   .mrow .tn{flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
   .mrow.win{color:var(--text); font-weight:800; background:linear-gradient(90deg,#16442e, #11362400)}
   .mrow.win .tn::after{content:" ✓"; color:var(--accent); font-weight:900}
+  /* the non-advancing pick in each match is struck through */
   .mrow.lose{opacity:.5}
-  /* result-aware coloring (when real results loaded) */
+  .mrow.lose .tn{text-decoration:line-through}
+  /* result-aware coloring (when real results loaded): green = pick confirmed to have reached this round */
   .mrow.hit{box-shadow:inset 3px 0 0 var(--good)}
-  .mrow.miss .tn{text-decoration:line-through}
   .champcard{background:linear-gradient(180deg,#1a4d33,#10301f); border:1px solid var(--gold);
     border-radius:11px; padding:14px; text-align:center}
   .champcard .lbl{font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--gold); font-weight:700}
   .champcard .nm{margin-top:7px; font-size:15px; font-weight:900; display:flex; align-items:center; justify-content:center; gap:8px}
+  .champcard.won{box-shadow:0 0 0 2px var(--good), 0 8px 24px #2dd47e33}
 
   /* group selections */
   .grphead{margin:20px 4px 10px; font-size:13px; letter-spacing:2px; text-transform:uppercase; color:var(--muted)}
@@ -144,7 +146,7 @@
   <header>
     <div class="kick">USA · Canada · Mexico</div>
     <h1><span class="trophy">🏆</span> World Cup 2026 Bracket Pool</h1>
-    <p>6 brackets · live scoring from real results · in partnership with nobody but us</p>
+    <p>7 brackets · live scoring from real results · in partnership with nobody but us</p>
   </header>
 
   <div class="lead-title">Leaderboard</div>
@@ -184,7 +186,7 @@
 
   <div class="foot">
     Brackets from the NBC News Bracket Challenge · flags via flagcdn.com<br>
-    Champion picks — 🇩🇪 Germany ×2 · 🇪🇸 Spain ×3 · 🇵🇹 Portugal ×1
+    Champion picks — 🇪🇸 Spain ×3 · 🇩🇪 Germany ×2 · 🇵🇹 Portugal ×2
   </div>
 </div>
 
@@ -231,25 +233,32 @@ const PLAYERS = {
     sf:["Germany","Spain","England","Argentina"], fin:["Germany","England"], champ:["Germany"] },
 
   Gabe:{ color:"#c084fc", champion:"Portugal",
+    groups:{A:["Mexico","Czech Republic"],B:["Switzerland","Canada","Bosnia and Herzegovina"],C:["Scotland","Brazil","Morocco"],D:["Turkey","United States"],E:["Germany","Ecuador","Ivory Coast"],F:["Sweden","Netherlands","Japan"],G:["Belgium","Egypt","Iran"],H:["Spain","Uruguay"],I:["France","Norway","Senegal"],J:["Argentina","Austria","Algeria"],K:["Portugal","Colombia"],L:["Croatia","England","Ghana"]},
+    r32:["Germany","Bosnia and Herzegovina","France","Morocco","Czech Republic","Canada","Sweden","Brazil","Colombia","England","Spain","Austria","Turkey","Algeria","Belgium","Ivory Coast","Scotland","Netherlands","Ecuador","Norway","Mexico","Japan","Croatia","Senegal","Argentina","Uruguay","United States","Egypt","Switzerland","Iran","Portugal","Ghana"],
+    r16:["Germany","France","Canada","Brazil","England","Spain","Turkey","Belgium","Scotland","Norway","Japan","Croatia","Argentina","Egypt","Switzerland","Portugal"],
+    qf:["France","Brazil","Spain","Belgium","Norway","Croatia","Argentina","Portugal"],
+    sf:["France","Spain","Norway","Portugal"], fin:["France","Portugal"], champ:["Portugal"] },
+
+  Lia:{ color:"#ffd24a", champion:"Portugal",
     groups:{A:["Mexico","Czech Republic","South Korea"],B:["Switzerland","Canada","Bosnia and Herzegovina"],C:["Brazil","Morocco","Scotland"],D:["Turkey","United States"],E:["Germany","Ecuador","Ivory Coast"],F:["Japan","Netherlands","Sweden"],G:["Belgium","Egypt"],H:["Spain","Uruguay","Saudi Arabia"],I:["France","Norway","Senegal"],J:["Argentina","Austria","Algeria"],K:["Portugal","Colombia"],L:["England","Croatia"]},
     r32:["Germany","South Korea","France","Scotland","Czech Republic","Canada","Japan","Morocco","Colombia","Croatia","Spain","Austria","Turkey","Bosnia and Herzegovina","Belgium","Algeria","Brazil","Netherlands","Ecuador","Norway","Mexico","Senegal","England","Saudi Arabia","Argentina","Uruguay","United States","Egypt","Switzerland","Sweden","Portugal","Ivory Coast"],
     r16:["Germany","France","Czech Republic","Morocco","Croatia","Spain","Turkey","Algeria","Netherlands","Ecuador","Senegal","England","Argentina","Egypt","Switzerland","Portugal"],
     qf:["Germany","Morocco","Spain","Turkey","Netherlands","England","Argentina","Portugal"],
     sf:["Germany","Spain","England","Portugal"], fin:["Spain","Portugal"], champ:["Portugal"] },
 
-  Lia:{ color:"#ffd24a", champion:"Germany",
-    groups:{A:["Mexico","Czech Republic","South Korea"],B:["Switzerland","Canada"],C:["Brazil","Morocco","Scotland"],D:["United States","Australia","Turkey"],E:["Germany","Ecuador","Ivory Coast"],F:["Netherlands","Japan","Sweden"],G:["Belgium","Iran"],H:["Spain","Uruguay"],I:["France","Norway","Senegal"],J:["Argentina","Austria"],K:["Portugal","Colombia","DR Congo"],L:["England","Croatia","Ghana"]},
-    r32:["Germany","Turkey","France","Scotland","Czech Republic","Canada","Netherlands","Morocco","Colombia","Croatia","Spain","Austria","United States","Ivory Coast","Belgium","South Korea","Brazil","Japan","Ecuador","Norway","Mexico","Senegal","England","DR Congo","Argentina","Uruguay","Australia","Iran","Switzerland","Sweden","Portugal","Ghana"],
-    r16:["Germany","France","Czech Republic","Netherlands","Croatia","Spain","United States","Belgium","Brazil","Norway","Mexico","England","Argentina","Australia","Switzerland","Portugal"],
-    qf:["Germany","Netherlands","Spain","Belgium","Brazil","England","Argentina","Switzerland"],
-    sf:["Germany","Spain","Brazil","Argentina"], fin:["Germany","Brazil"], champ:["Germany"] },
-
   Isabella:{ color:"#f472b6", champion:"Spain",
     groups:{A:["Mexico","South Korea","Czech Republic"],B:["Switzerland","Canada","Bosnia and Herzegovina"],C:["Brazil","Morocco"],D:["United States","Turkey","Australia"],E:["Germany","Ivory Coast","Ecuador"],F:["Netherlands","Japan","Sweden"],G:["Belgium","Egypt"],H:["Spain","Uruguay"],I:["France","Norway","Senegal"],J:["Argentina","Austria","Algeria"],K:["Portugal","Colombia"],L:["England","Croatia","Ghana"]},
     r32:["Germany","Czech Republic","France","Australia","South Korea","Canada","Netherlands","Morocco","Colombia","Croatia","Spain","Austria","United States","Bosnia and Herzegovina","Belgium","Algeria","Brazil","Japan","Ivory Coast","Norway","Mexico","Ecuador","England","Senegal","Argentina","Uruguay","Turkey","Egypt","Switzerland","Sweden","Portugal","Ghana"],
     r16:["Germany","France","Canada","Netherlands","Colombia","Spain","Bosnia and Herzegovina","Belgium","Brazil","Ivory Coast","Mexico","England","Argentina","Turkey","Switzerland","Portugal"],
     qf:["France","Netherlands","Spain","Belgium","Brazil","England","Argentina","Portugal"],
-    sf:["France","Spain","England","Portugal"], fin:["Spain","Portugal"], champ:["Spain"] }
+    sf:["France","Spain","England","Portugal"], fin:["Spain","Portugal"], champ:["Spain"] },
+
+  Carmen:{ color:"#22d3ee", champion:"Germany",
+    groups:{A:["Mexico","Czech Republic","South Korea"],B:["Switzerland","Canada"],C:["Brazil","Morocco","Scotland"],D:["United States","Australia","Turkey"],E:["Germany","Ecuador","Ivory Coast"],F:["Netherlands","Japan","Sweden"],G:["Belgium","Iran"],H:["Spain","Uruguay"],I:["France","Norway","Senegal"],J:["Argentina","Austria"],K:["Portugal","Colombia","DR Congo"],L:["England","Croatia","Ghana"]},
+    r32:["Germany","Turkey","France","Scotland","Czech Republic","Canada","Netherlands","Morocco","Colombia","Croatia","Spain","Austria","United States","Ivory Coast","Belgium","South Korea","Brazil","Japan","Ecuador","Norway","Mexico","Senegal","England","DR Congo","Argentina","Uruguay","Australia","Iran","Switzerland","Sweden","Portugal","Ghana"],
+    r16:["Germany","France","Czech Republic","Netherlands","Croatia","Spain","United States","Belgium","Brazil","Norway","Mexico","England","Argentina","Australia","Switzerland","Portugal"],
+    qf:["Germany","Netherlands","Spain","Belgium","Brazil","England","Argentina","Switzerland"],
+    sf:["Germany","Spain","Brazil","Argentina"], fin:["Germany","Brazil"], champ:["Germany"] }
 };
 const NAMES = Object.keys(PLAYERS);
 
@@ -338,20 +347,20 @@ function renderBracketView(){
     const ms=pairs(pl[rd.key]).map(([a,b])=>{
       const aw=nextSet.has(a), bw=nextSet.has(b);
       const row=(t,win)=>{
+        // winners are never struck; the loser of each match is struck via .lose
         let cls="mrow "+(win?"win":"lose");
-        if(results){ const reached=stageOf(t)>=rstage; cls+=win?(reached?" hit":" miss"):""; }
+        if(results && win && stageOf(t)>=rstage) cls+=" hit";
         return `<div class="${cls}">${flag(t)}<span class="tn">${t}</span></div>`;
       };
       return `<div class="match">${row(a,aw)}${row(b,bw)}</div>`;
     }).join("");
     return `<div class="bk-col"><div class="rndname">${rd.label}</div>${ms}</div>`;
   }).join("");
-  // champion column
+  // champion column — always shown with the trophy; green ring if confirmed champion
   const champReached = stageOf(pl.champion)>=6;
-  let champCls="champcard";
   cols+=`<div class="bk-col champcol"><div class="rndname">Champion</div>
-    <div class="${champCls}"><div class="lbl">Winner</div>
-    <div class="nm">${flag(pl.champion,'lg')}${pl.champion}${results?(champReached?' ✅':' ❌'):''}</div></div></div>`;
+    <div class="champcard ${champReached?'won':''}"><div class="lbl">Winner</div>
+    <div class="nm">${flag(pl.champion,'lg')}${pl.champion} 🏆</div></div></div>`;
   document.getElementById("bracket").innerHTML=cols;
   // groups
   const go="ABCDEFGHIJKL";
