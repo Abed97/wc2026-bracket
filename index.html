@@ -55,9 +55,20 @@
   .pcard .tot small{font-size:13px; font-weight:600; color:var(--muted); margin-left:4px}
   .pcard .champ{display:flex; align-items:center; gap:7px; font-size:13px; color:var(--muted); margin-top:4px}
   .pcard .champ b{color:var(--text)}
-  .mini{display:flex; flex-wrap:wrap; gap:5px; margin-top:11px}
-  .mini span{font-size:10.5px; padding:2px 7px; border-radius:999px; background:#0a221880; border:1px solid var(--line); color:var(--muted)}
-  .mini b{color:var(--text)}
+  .pcard{cursor:pointer}
+  .expand{margin-top:11px; font-size:11px; color:var(--muted); user-select:none; display:flex; align-items:center; gap:6px}
+  .expand::before{content:"▾"; display:inline-block; transition:transform .2s}
+  .pcard.open .expand::before{transform:rotate(180deg)}
+  .detail{max-height:0; overflow:hidden; transition:max-height .3s ease}
+  .pcard.open .detail{max-height:360px; margin-top:8px}
+  .brk{display:grid; grid-template-columns:1fr auto 42px; gap:8px; font-size:12px; padding:4px 0; border-top:1px solid #163e2c; align-items:center}
+  .brk .bl{color:var(--muted)}
+  .brk .bc{color:var(--muted); font-size:11px; font-variant-numeric:tabular-nums}
+  .brk .bp{font-weight:800; text-align:right; font-variant-numeric:tabular-nums}
+  .brk.z{opacity:.4}
+  .brk.tt{border-top:1px solid var(--line); margin-top:3px}
+  .brk.tt .bl{color:var(--text); font-weight:800}
+  .brk.tt .bp{color:var(--accent)}
 
   .flag{width:22px; height:16px; border-radius:2.5px; object-fit:cover; box-shadow:0 1px 3px #0007;
     vertical-align:middle; background:#1a3a2b}
@@ -88,22 +99,26 @@
   .champbanner .lbl{font-size:11px; letter-spacing:2px; text-transform:uppercase; color:var(--gold); font-weight:700}
   .champbanner .nm{font-size:22px; font-weight:900; display:flex; align-items:center; gap:10px}
 
-  .bracket{display:flex; gap:14px; overflow-x:auto; align-items:stretch; padding:6px 2px 14px}
-  .bk-col{display:flex; flex-direction:column; justify-content:space-around; min-width:158px; gap:8px}
-  .bk-col.champcol{justify-content:center; min-width:170px}
-  .rndname{position:sticky; top:0; text-align:center; font-size:10.5px; letter-spacing:1.5px; text-transform:uppercase;
-    color:var(--muted); font-weight:700; padding-bottom:4px; margin-bottom:2px}
-  .match{background:var(--card); border:1px solid var(--line); border-radius:9px; overflow:hidden}
-  .mrow{display:flex; align-items:center; gap:7px; padding:6px 8px; font-size:12.5px; color:var(--muted)}
+  .bracket{display:flex; gap:30px; overflow-x:auto; align-items:stretch; padding:6px 6px 18px}
+  .bk-col{display:flex; flex-direction:column; min-width:174px}
+  .bk-col.champcol{min-width:188px}
+  .rndname{flex:0 0 auto; text-align:center; font-size:10.5px; letter-spacing:1.5px; text-transform:uppercase;
+    color:var(--muted); font-weight:700; margin-bottom:10px}
+  .col-body{flex:1; display:flex; flex-direction:column}
+  .mwrap{flex:1; display:flex; align-items:center; justify-content:center; position:relative}
+  .match{width:100%; background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden; box-shadow:0 2px 9px #00000040}
+  .mrow{display:flex; align-items:center; gap:8px; padding:7px 9px; font-size:12.5px; color:var(--muted)}
   .mrow + .mrow{border-top:1px solid #163e2c}
   .mrow .tn{flex:1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis}
-  .mrow.win{color:var(--text); font-weight:800; background:linear-gradient(90deg,#16442e, #11362400)}
+  .mrow.win{color:var(--text); font-weight:800; background:linear-gradient(90deg,#19502f,#11362400)}
   .mrow.win .tn::after{content:" ✓"; color:var(--accent); font-weight:900}
-  /* the non-advancing pick in each match is struck through */
   .mrow.lose{opacity:.5}
   .mrow.lose .tn{text-decoration:line-through}
-  /* result-aware coloring (when real results loaded): green = pick confirmed to have reached this round */
   .mrow.hit{box-shadow:inset 3px 0 0 var(--good)}
+  /* bracket connectors: in-stub (left), out-stub (right), vertical between each pair */
+  .bk-col:not(:first-child) .mwrap::before{content:""; position:absolute; left:-15px; top:50%; width:15px; height:2px; background:var(--line)}
+  .bk-col:not(.champcol) .mwrap::after{content:""; position:absolute; right:-15px; top:50%; width:15px; height:2px; background:var(--line)}
+  .vline{position:absolute; right:-15px; top:50%; width:2px; height:100%; background:var(--line)}
   .champcard{background:linear-gradient(180deg,#1a4d33,#10301f); border:1px solid var(--gold);
     border-radius:11px; padding:14px; text-align:center}
   .champcard .lbl{font-size:10px; letter-spacing:1.5px; text-transform:uppercase; color:var(--gold); font-weight:700}
@@ -287,9 +302,10 @@ const TEAMS=[...new Set(NAMES.flatMap(n=>PLAYERS[n].r32))].sort();
 /* ---------- state ---------- */
 const LS_RESULTS="wc26_overrides", LS_PTS="wc26_pts";
 let overrides=JSON.parse(localStorage.getItem(LS_RESULTS)||"{}");
-let auto={}, autoMeta={lastUpdated:null,source:null};
+let auto={}, autoPos={}, autoMeta={lastUpdated:null,source:null};
 let pts=JSON.parse(localStorage.getItem(LS_PTS)||"null");
 if(!pts){ pts={}; ROUNDS.forEach(r=>pts[r.key]=r.pts); }
+if(pts.grouppos==null) pts.grouppos=1;   // bonus for guessing a team's exact group finishing position
 const save=()=>{localStorage.setItem(LS_RESULTS,JSON.stringify(overrides));localStorage.setItem(LS_PTS,JSON.stringify(pts));};
 const stageOf=t=>(t in overrides)?overrides[t]:(auto[t]||0);
 const hasResults=()=>Object.keys(overrides).length>0||Object.keys(auto).length>0;
@@ -298,6 +314,12 @@ let selected=NAMES[0];
 /* ---------- scoring ---------- */
 function scorePlayer(n){
   const pl=PLAYERS[n]; let total=0; const bd={};
+  // exact group-position bonus: a team predicted at slot i that actually finished i-th in its group
+  let gpc=0;
+  for(const g of Object.values(pl.groups)){
+    g.forEach((t,i)=>{ if(autoPos[t] && autoPos[t]===i+1) gpc++; });
+  }
+  bd.grouppos={c:gpc, pts:gpc*pts.grouppos}; total+=gpc*pts.grouppos;
   ROUNDS.forEach(r=>{
     let c=0;
     if(r.key==="champ") c=stageOf(pl.champion)>=6?1:0;
@@ -308,19 +330,25 @@ function scorePlayer(n){
 }
 
 /* ---------- leaderboard ---------- */
+const BRK_LINES=[['grouppos','Group positions'],['r32','Reached R32'],['r16','Reached R16'],['qf','Reached QF'],['sf','Reached SF'],['fin','Reached Final'],['champ','Champion']];
 function renderBoard(){
   const rows=NAMES.map(n=>({n,...scorePlayer(n)})).sort((a,b)=>b.total-a.total);
   const medals=["🥇","🥈","🥉"];
   document.getElementById("board").innerHTML=rows.map((r,i)=>{
     const pl=PLAYERS[r.n];
-    const mini=ROUNDS.map(rd=>`<span>${rd.label} <b>${r.bd[rd.key].c}</b></span>`).join("");
+    const detail=BRK_LINES.map(([k,label])=>{
+      const b=r.bd[k];
+      return `<div class="brk ${b.c>0?'':'z'}"><span class="bl">${label}</span><span class="bc">${b.c} × ${pts[k]}</span><span class="bp">${b.pts}</span></div>`;
+    }).join("");
     return `<div class="pcard ${i===0?'first':''}" style="--pc:${pl.color}">
       <div class="nm"><span class="rank">${medals[i]||('#'+(i+1))}</span><span class="dot"></span>${r.n}</div>
       <div class="tot">${r.total}<small>pts</small></div>
       <div class="champ">${flag(pl.champion,'sm')} <b>${pl.champion}</b> to win</div>
-      <div class="mini">${mini}</div>
+      <div class="expand">point breakdown</div>
+      <div class="detail">${detail}<div class="brk tt"><span class="bl">Total</span><span class="bc"></span><span class="bp">${r.total}</span></div></div>
     </div>`;
   }).join("");
+  document.querySelectorAll("#board .pcard").forEach(c=>c.addEventListener("click",()=>c.classList.toggle("open")));
 }
 
 /* ---------- bracket view ---------- */
@@ -340,11 +368,12 @@ function renderBracketView(){
   document.getElementById("champbanner").innerHTML=
     `<div><div class="lbl">${selected}'s pick to lift the trophy</div>
      <div class="nm">${flag(pl.champion,'lg')} ${pl.champion} 🏆</div></div>`;
-  // columns
+  // columns — each match wrapped in a flex:1 slot so the next round centers between its two feeders
   let cols=VIEW_ROUNDS.map(rd=>{
     const nextSet=new Set(rd.next==="champ"?pl.champ:pl[rd.next]);
     const rstage=ROUNDS.find(x=>x.key===rd.key).stage;
-    const ms=pairs(pl[rd.key]).map(([a,b])=>{
+    const ps=pairs(pl[rd.key]);
+    const ms=ps.map(([a,b],mi)=>{
       const aw=nextSet.has(a), bw=nextSet.has(b);
       const row=(t,win)=>{
         // winners are never struck; the loser of each match is struck via .lose
@@ -352,15 +381,16 @@ function renderBracketView(){
         if(results && win && stageOf(t)>=rstage) cls+=" hit";
         return `<div class="${cls}">${flag(t)}<span class="tn">${t}</span></div>`;
       };
-      return `<div class="match">${row(a,aw)}${row(b,bw)}</div>`;
+      const vline = (mi%2===0 && mi+1<ps.length) ? `<span class="vline"></span>` : "";
+      return `<div class="mwrap"><div class="match">${row(a,aw)}${row(b,bw)}</div>${vline}</div>`;
     }).join("");
-    return `<div class="bk-col"><div class="rndname">${rd.label}</div>${ms}</div>`;
+    return `<div class="bk-col"><div class="rndname">${rd.label}</div><div class="col-body">${ms}</div></div>`;
   }).join("");
   // champion column — always shown with the trophy; green ring if confirmed champion
   const champReached = stageOf(pl.champion)>=6;
-  cols+=`<div class="bk-col champcol"><div class="rndname">Champion</div>
+  cols+=`<div class="bk-col champcol"><div class="rndname">Champion</div><div class="col-body"><div class="mwrap">
     <div class="champcard ${champReached?'won':''}"><div class="lbl">Winner</div>
-    <div class="nm">${flag(pl.champion,'lg')}${pl.champion} 🏆</div></div></div>`;
+    <div class="nm">${flag(pl.champion,'lg')}${pl.champion} 🏆</div></div></div></div></div>`;
   document.getElementById("bracket").innerHTML=cols;
   // groups
   const go="ABCDEFGHIJKL";
@@ -399,7 +429,7 @@ async function loadAuto(){
   try{
     const res=await fetch("wc2026-results.json?_="+Date.now());
     if(!res.ok) throw new Error("HTTP "+res.status);
-    const d=await res.json(); auto=d.stages||{}; autoMeta={lastUpdated:d.lastUpdated,source:d.source};
+    const d=await res.json(); auto=d.stages||{}; autoPos=d.groupPositions||{}; autoMeta={lastUpdated:d.lastUpdated,source:d.source};
   }catch(e){ autoMeta={lastUpdated:null,source:"could not load file ("+e.message+")"}; }
   renderStatus(); renderBoard(); renderTeams(); renderBracketView();
 }
@@ -407,7 +437,9 @@ async function loadAuto(){
 /* ---------- scoring config ---------- */
 function renderCfg(){
   const c=document.getElementById("cfg");
-  c.innerHTML=ROUNDS.map(r=>`<label>${r.label==="R32"?"Reach R32":r.label==="R16"?"Reach R16":r.label==="QF"?"Reach QF":r.label==="SF"?"Reach SF":r.label==="Final"?"Reach Final":"Champion"} (per team)
+  const gp=`<label>Correct group position (each)
+    <input type="number" min="0" data-k="grouppos" value="${pts.grouppos}"></label>`;
+  c.innerHTML=gp+ROUNDS.map(r=>`<label>${r.label==="R32"?"Reach R32":r.label==="R16"?"Reach R16":r.label==="QF"?"Reach QF":r.label==="SF"?"Reach SF":r.label==="Final"?"Reach Final":"Champion"} (per team)
     <input type="number" min="0" data-k="${r.key}" value="${pts[r.key]}"></label>`).join("");
   c.querySelectorAll("input").forEach(inp=>inp.addEventListener("input",e=>{
     pts[e.target.dataset.k]=+e.target.value||0; save(); renderBoard(); renderBracketView();

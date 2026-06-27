@@ -74,17 +74,36 @@ for (let t = START; t <= END; t += 86400000){
   scanned++;
 }
 
-// merge with existing file (never lower a value; keep manual entries)
-let existing = {};
-try { existing = (JSON.parse(await readFile('wc2026-results.json','utf8')).stages) || {}; } catch {}
+// group finishing positions (1-4) from the standings endpoint
+const groupPos = {};
+try {
+  const r = await fetch('https://site.api.espn.com/apis/v2/sports/soccer/fifa.world/standings?season=2026');
+  if (r.ok){
+    const sj = await r.json();
+    for (const grp of (sj.children||[])){
+      for (const e of (grp?.standings?.entries||[])){
+        const name = resolve(e);
+        const rankStat = (e.stats||[]).find(s => s.name === 'rank');
+        const rank = rankStat ? Number(rankStat.value) : 0;
+        if (name && rank) groupPos[name] = rank;
+      }
+    }
+  }
+} catch { /* keep existing positions on failure */ }
+
+// merge with existing file (never lower a stage; keep manual entries; refresh positions)
+let existing = {}, existingPos = {};
+try { const f = JSON.parse(await readFile('wc2026-results.json','utf8')); existing = f.stages||{}; existingPos = f.groupPositions||{}; } catch {}
 const merged = { ...existing };
 for (const [tm, s] of Object.entries(stages)) if ((merged[tm]||0) < s) merged[tm] = s;
+const mergedPos = Object.keys(groupPos).length ? groupPos : existingPos;
 
 const out = {
   lastUpdated: new Date().toISOString().slice(0,10),
   source: 'ESPN public API (site.api.espn.com) via GitHub Actions',
-  note: 'team -> furthest stage reached. 0=out,1=group/R32,2=R16,3=QF,4=SF,5=Final,6=Champion.',
-  stages: Object.fromEntries(Object.entries(merged).sort())
+  note: 'team -> furthest stage reached. 0=out,1=group/R32,2=R16,3=QF,4=SF,5=Final,6=Champion. groupPositions: actual finishing rank (1-4) in the group stage.',
+  stages: Object.fromEntries(Object.entries(merged).sort()),
+  groupPositions: Object.fromEntries(Object.entries(mergedPos).sort())
 };
 await writeFile('wc2026-results.json', JSON.stringify(out, null, 2) + '\n');
-console.log(`Scanned ${scanned} days; ${Object.keys(stages).length} teams from ESPN; ${Object.keys(out.stages).length} total in file.`);
+console.log(`Scanned ${scanned} days; ${Object.keys(stages).length} stage-teams; ${Object.keys(mergedPos).length} group positions; ${Object.keys(out.stages).length} total stages in file.`);
