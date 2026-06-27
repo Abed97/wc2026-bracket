@@ -55,20 +55,9 @@
   .pcard .tot small{font-size:13px; font-weight:600; color:var(--muted); margin-left:4px}
   .pcard .champ{display:flex; align-items:center; gap:7px; font-size:13px; color:var(--muted); margin-top:4px}
   .pcard .champ b{color:var(--text)}
-  .pcard{cursor:pointer}
-  .expand{margin-top:11px; font-size:11px; color:var(--muted); user-select:none; display:flex; align-items:center; gap:6px}
-  .expand::before{content:"▾"; display:inline-block; transition:transform .2s}
-  .pcard.open .expand::before{transform:rotate(180deg)}
-  .detail{max-height:0; overflow:hidden; transition:max-height .3s ease}
-  .pcard.open .detail{max-height:360px; margin-top:8px}
-  .brk{display:grid; grid-template-columns:1fr auto 42px; gap:8px; font-size:12px; padding:4px 0; border-top:1px solid #163e2c; align-items:center}
-  .brk .bl{color:var(--muted)}
-  .brk .bc{color:var(--muted); font-size:11px; font-variant-numeric:tabular-nums}
-  .brk .bp{font-weight:800; text-align:right; font-variant-numeric:tabular-nums}
-  .brk.z{opacity:.4}
-  .brk.tt{border-top:1px solid var(--line); margin-top:3px}
-  .brk.tt .bl{color:var(--text); font-weight:800}
-  .brk.tt .bp{color:var(--accent)}
+  .mini{display:flex; flex-wrap:wrap; gap:5px; margin-top:11px}
+  .mini span{font-size:10.5px; padding:2px 7px; border-radius:999px; background:#0a221880; border:1px solid var(--line); color:var(--muted)}
+  .mini b{color:var(--text)}
 
   .flag{width:22px; height:16px; border-radius:2.5px; object-fit:cover; box-shadow:0 1px 3px #0007;
     vertical-align:middle; background:#1a3a2b}
@@ -125,6 +114,19 @@
   .champcard .nm{margin-top:7px; font-size:15px; font-weight:900; display:flex; align-items:center; justify-content:center; gap:8px}
   .champcard.won{box-shadow:0 0 0 2px var(--good), 0 8px 24px #2dd47e33}
 
+  /* scorecard — which picks earned points */
+  .scwrap{display:flex; flex-direction:column; gap:9px}
+  .sccat{background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 12px}
+  .schead{display:flex; justify-content:space-between; align-items:baseline; gap:10px; font-size:13px; font-weight:700; margin-bottom:8px}
+  .schead small{color:var(--muted); font-weight:600; font-size:11px}
+  .scsub{color:var(--accent); font-variant-numeric:tabular-nums; font-weight:800; white-space:nowrap}
+  .scsub.zero{color:var(--muted); opacity:.7}
+  .scchips{display:flex; flex-wrap:wrap; gap:6px}
+  .sct{display:inline-flex; align-items:center; gap:6px; font-size:12px; padding:3px 9px; border-radius:999px; background:#0e2a1e; border:1px solid var(--line)}
+  .sct em{color:var(--accent2); font-style:normal; font-size:11px}
+  .scnone{font-size:12px; color:var(--muted); opacity:.6}
+  .sctotal{align-self:flex-end; font-size:14px; color:var(--text); margin-top:4px}
+  .sctotal b{color:var(--accent); font-size:20px; margin-left:4px}
   /* group selections */
   .grphead{margin:20px 4px 10px; font-size:13px; letter-spacing:2px; text-transform:uppercase; color:var(--muted)}
   .groups{display:grid; grid-template-columns:repeat(auto-fill,minmax(165px,1fr)); gap:9px}
@@ -178,6 +180,8 @@
     <div class="psel" id="psel"></div>
     <div class="champbanner" id="champbanner"></div>
     <div class="bracket" id="bracket"></div>
+    <div class="grphead">Points earned — exactly which picks scored</div>
+    <div id="scorecard"></div>
     <div class="grphead">Group-stage picks</div>
     <div class="groups" id="groups"></div>
   </div>
@@ -330,25 +334,20 @@ function scorePlayer(n){
 }
 
 /* ---------- leaderboard ---------- */
-const BRK_LINES=[['grouppos','Group positions'],['r32','Reached R32'],['r16','Reached R16'],['qf','Reached QF'],['sf','Reached SF'],['fin','Reached Final'],['champ','Champion']];
+const MINI=[['grouppos','GP'],['r32','R32'],['r16','R16'],['qf','QF'],['sf','SF'],['fin','F'],['champ','🏆']];
 function renderBoard(){
   const rows=NAMES.map(n=>({n,...scorePlayer(n)})).sort((a,b)=>b.total-a.total);
   const medals=["🥇","🥈","🥉"];
   document.getElementById("board").innerHTML=rows.map((r,i)=>{
     const pl=PLAYERS[r.n];
-    const detail=BRK_LINES.map(([k,label])=>{
-      const b=r.bd[k];
-      return `<div class="brk ${b.c>0?'':'z'}"><span class="bl">${label}</span><span class="bc">${b.c} × ${pts[k]}</span><span class="bp">${b.pts}</span></div>`;
-    }).join("");
+    const mini=MINI.map(([k,lab])=>`<span>${lab} <b>${r.bd[k].c}</b></span>`).join("");
     return `<div class="pcard ${i===0?'first':''}" style="--pc:${pl.color}">
       <div class="nm"><span class="rank">${medals[i]||('#'+(i+1))}</span><span class="dot"></span>${r.n}</div>
       <div class="tot">${r.total}<small>pts</small></div>
       <div class="champ">${flag(pl.champion,'sm')} <b>${pl.champion}</b> to win</div>
-      <div class="expand">point breakdown</div>
-      <div class="detail">${detail}<div class="brk tt"><span class="bl">Total</span><span class="bc"></span><span class="bp">${r.total}</span></div></div>
+      <div class="mini" title="correct picks per category">${mini}</div>
     </div>`;
   }).join("");
-  document.querySelectorAll("#board .pcard").forEach(c=>c.addEventListener("click",()=>c.classList.toggle("open")));
 }
 
 /* ---------- bracket view ---------- */
@@ -399,6 +398,30 @@ function renderBracketView(){
     return `<div class="grp"><h4>Group ${g}</h4>${ts.map((t,i)=>
       `<div class="gt"><span class="pos">${i+1}</span>${flag(t,'sm')}<span>${t}</span></div>`).join("")}</div>`;
   }).join("");
+  renderScorecard();
+}
+
+const ord = n => n+(n===1?"st":n===2?"nd":n===3?"rd":"th");
+function renderScorecard(){
+  const pl=PLAYERS[selected], sc=scorePlayer(selected);
+  const cats=[];
+  const gp=[];
+  Object.values(pl.groups).forEach(g=>g.forEach((t,i)=>{ if(autoPos[t]===i+1) gp.push({t, note:ord(i+1)+" in group"}); }));
+  cats.push({label:'Correct group position', per:pts.grouppos, teams:gp});
+  [['r32',1,'Reached Round of 32'],['r16',2,'Reached Round of 16'],['qf',3,'Reached Quarterfinals'],['sf',4,'Reached Semifinals'],['fin',5,'Reached Final']].forEach(([k,st,label])=>{
+    cats.push({label, per:pts[k], teams: pl[k].filter(t=>stageOf(t)>=st).map(t=>({t}))});
+  });
+  cats.push({label:'Champion', per:pts.champ, teams: stageOf(pl.champion)>=6?[{t:pl.champion}]:[]});
+  const html=cats.map(c=>{
+    const sub=c.teams.length*c.per;
+    const chips=c.teams.length
+      ? c.teams.map(x=>`<span class="sct">${flag(x.t,'sm')}${x.t}${x.note?` <em>${x.note}</em>`:''}</span>`).join("")
+      : `<span class="scnone">— none yet</span>`;
+    return `<div class="sccat"><div class="schead"><span>${c.label} <small>+${c.per} each</small></span>`
+      +`<span class="scsub ${sub?'':'zero'}">${c.teams.length} × ${c.per} = ${sub}</span></div>`
+      +`<div class="scchips">${chips}</div></div>`;
+  }).join("");
+  document.getElementById("scorecard").innerHTML=`<div class="scwrap">${html}<div class="sctotal">${selected}'s total:<b>${sc.total}</b></div></div>`;
 }
 
 /* ---------- results entry ---------- */
