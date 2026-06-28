@@ -319,9 +319,17 @@ function ensureUnlocked(){
 const LS_RESULTS="wc26_overrides", LS_PTS="wc26_pts";
 let overrides=JSON.parse(localStorage.getItem(LS_RESULTS)||"{}");
 let auto={}, autoPos={}, autoMeta={lastUpdated:null,source:null};
+// Canonical, shared scoring scheme — baked into the site so it's the same for everyone and never resets.
+// Bump PTS_VERSION whenever this scheme changes to push the new values to every viewer.
+const PTS_VERSION="grp5-2026-06-29";
+const DEFAULT_PTS={grouppos:5}; ROUNDS.forEach(r=>DEFAULT_PTS[r.key]=r.pts);
 let pts=JSON.parse(localStorage.getItem(LS_PTS)||"null");
-if(!pts){ pts={}; ROUNDS.forEach(r=>pts[r.key]=r.pts); }
-if(pts.grouppos==null) pts.grouppos=1;   // bonus for guessing a team's exact group finishing position
+if(!pts || localStorage.getItem("wc26_pts_v")!==PTS_VERSION){
+  pts={...DEFAULT_PTS};
+  localStorage.setItem(LS_PTS,JSON.stringify(pts));
+  localStorage.setItem("wc26_pts_v",PTS_VERSION);
+}
+if(pts.grouppos==null) pts.grouppos=DEFAULT_PTS.grouppos;
 const save=()=>{localStorage.setItem(LS_RESULTS,JSON.stringify(overrides));localStorage.setItem(LS_PTS,JSON.stringify(pts));};
 const stageOf=t=>(t in overrides)?overrides[t]:(auto[t]||0);
 const hasResults=()=>Object.keys(overrides).length>0||Object.keys(auto).length>0;
