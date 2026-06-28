@@ -92,14 +92,18 @@ try {
 } catch { /* keep existing positions on failure */ }
 
 // merge with existing file (never lower a stage; keep manual entries; refresh positions)
-let existing = {}, existingPos = {};
-try { const f = JSON.parse(await readFile('wc2026-results.json','utf8')); existing = f.stages||{}; existingPos = f.groupPositions||{}; } catch {}
+let existing = {}, existingPos = {}, existingUpdated = null;
+try { const f = JSON.parse(await readFile('wc2026-results.json','utf8')); existing = f.stages||{}; existingPos = f.groupPositions||{}; existingUpdated = f.lastUpdated||null; } catch {}
 const merged = { ...existing };
 for (const [tm, s] of Object.entries(stages)) if ((merged[tm]||0) < s) merged[tm] = s;
 const mergedPos = Object.keys(groupPos).length ? groupPos : existingPos;
 
+// only refresh the timestamp when the data actually changed, so unchanged days don't create empty commits
+const sortedJSON = o => JSON.stringify(Object.entries(o).sort());
+const dataChanged = sortedJSON(merged) !== sortedJSON(existing) || sortedJSON(mergedPos) !== sortedJSON(existingPos);
+
 const out = {
-  lastUpdated: new Date().toISOString().slice(0,10),
+  lastUpdated: (dataChanged || !existingUpdated) ? new Date().toISOString() : existingUpdated,
   source: 'ESPN public API (site.api.espn.com) via GitHub Actions',
   note: 'team -> furthest stage reached. 0=out,1=group/R32,2=R16,3=QF,4=SF,5=Final,6=Champion. groupPositions: actual finishing rank (1-4) in the group stage.',
   stages: Object.fromEntries(Object.entries(merged).sort()),

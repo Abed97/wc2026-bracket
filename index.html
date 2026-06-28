@@ -188,7 +188,7 @@
 
   <!-- RESULTS -->
   <div class="panel" id="panel-results">
-    <p class="hint">Pick <b>how far each team actually got</b>. Real results auto-load from <code>wc2026-results.json</code>; your manual picks (highlighted) override the file. Every bracket pick that matches reality earns that round's points.</p>
+    <p class="hint">Pick <b>how far each team actually got</b>. Real results auto-load from <code>wc2026-results.json</code>; your manual picks (highlighted) override the file. Every bracket pick that matches reality earns that round's points. <b>🔒 Editing is password-protected.</b></p>
     <div class="status" id="status"></div>
     <div class="actions">
       <button class="btn" id="refreshBtn">↻ Reload results file</button>
@@ -199,7 +199,7 @@
 
   <!-- SCORING -->
   <div class="panel" id="panel-scoring">
-    <p class="hint">Points per correct pick at each stage. Defaults double each round. Edit any value — everything recalculates instantly.</p>
+    <p class="hint">Points per correct pick at each stage. Defaults double each round. Edit any value — everything recalculates instantly and is saved in this browser. <b>🔒 Editing is password-protected.</b></p>
     <div class="cfg" id="cfg"></div>
   </div>
 
@@ -302,6 +302,18 @@ const VIEW_ROUNDS=[
   {key:"fin",label:"Final",next:"champ"},
 ];
 const TEAMS=[...new Set(NAMES.flatMap(n=>PLAYERS[n].r32))].sort();
+
+/* ---------- edit lock (password-protected changes) ---------- */
+const PW="1997";
+let unlocked=sessionStorage.getItem("wc26_unlocked")==="1";
+function ensureUnlocked(){
+  if(unlocked) return true;
+  const p=prompt("Enter password to change results & scoring:");
+  if(p===null) return false;                    // cancelled
+  if(p===PW){ unlocked=true; sessionStorage.setItem("wc26_unlocked","1"); return true; }
+  alert("Incorrect password.");
+  return false;
+}
 
 /* ---------- state ---------- */
 const LS_RESULTS="wc26_overrides", LS_PTS="wc26_pts";
@@ -435,15 +447,25 @@ function renderTeams(){
   }).join("");
   g.querySelectorAll("select").forEach(sel=>sel.addEventListener("change",e=>{
     const t=e.target.dataset.team, v=+e.target.value;
+    if(!ensureUnlocked()){ e.target.value=String(stageOf(t)); return; }
     if(v===(auto[t]||0)) delete overrides[t]; else overrides[t]=v;
     save(); renderBoard(); renderBracketView(); renderStatus();
     const row=e.target.closest(".teamrow");
     row.classList.toggle("live",v>0); row.classList.toggle("ovr",(t in overrides));
   }));
 }
+function fmtWhen(s){
+  if(!s) return "not loaded";
+  const d=new Date(s);
+  if(isNaN(d.getTime())) return s;
+  const hasTime=/[T ]\d\d:/.test(s);
+  return d.toLocaleString(undefined, hasTime
+    ? {year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}
+    : {year:'numeric',month:'short',day:'numeric'});
+}
 function renderStatus(){
   const n=Object.keys(auto).length,o=Object.keys(overrides).length;
-  const when=autoMeta.lastUpdated?`<b>${autoMeta.lastUpdated}</b>`:"<b>not loaded</b>";
+  const when=`<b>${fmtWhen(autoMeta.lastUpdated)}</b>`;
   document.getElementById("status").innerHTML=
     `Auto-results: ${when} · ${n} team(s) with results`+(o?` · ${o} override(s)`:"")
     +(autoMeta.source?` · <span style="opacity:.7">${autoMeta.source}</span>`:"");
@@ -465,6 +487,7 @@ function renderCfg(){
   c.innerHTML=gp+ROUNDS.map(r=>`<label>${r.label==="R32"?"Reach R32":r.label==="R16"?"Reach R16":r.label==="QF"?"Reach QF":r.label==="SF"?"Reach SF":r.label==="Final"?"Reach Final":"Champion"} (per team)
     <input type="number" min="0" data-k="${r.key}" value="${pts[r.key]}"></label>`).join("");
   c.querySelectorAll("input").forEach(inp=>inp.addEventListener("input",e=>{
+    if(!ensureUnlocked()){ e.target.value=pts[e.target.dataset.k]; return; }
     pts[e.target.dataset.k]=+e.target.value||0; save(); renderBoard(); renderBracketView();
   }));
 }
@@ -476,6 +499,7 @@ document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{
   t.classList.add("active"); document.getElementById("panel-"+t.dataset.panel).classList.add("active");
 }));
 document.getElementById("clearBtn").addEventListener("click",()=>{
+  if(!ensureUnlocked()) return;
   if(confirm("Clear your manual overrides? (auto-loaded results stay)")){ overrides={}; save(); renderTeams(); renderBoard(); renderBracketView(); renderStatus(); }
 });
 document.getElementById("refreshBtn").addEventListener("click",loadAuto);
