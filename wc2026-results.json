@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-06-30T02:24:15.139Z",
+  "lastUpdated": "2026-06-30T10:36:28.030Z",
   "source": "ESPN public API (site.api.espn.com) via GitHub Actions",
   "note": "team -> furthest stage reached. 0=out,1=group/R32,2=R16,3=QF,4=SF,5=Final,6=Champion. groupPositions: actual finishing rank (1-4) in the group stage.",
   "stages": {
@@ -23,7 +23,7 @@
     "Ivory Coast": 1,
     "Japan": 1,
     "Mexico": 1,
-    "Morocco": 1,
+    "Morocco": 2,
     "Netherlands": 1,
     "Norway": 1,
     "Portugal": 1,
