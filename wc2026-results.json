@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-06-28T21:17:00Z",
+  "lastUpdated": "2026-06-30T02:24:15.139Z",
   "source": "ESPN public API (site.api.espn.com) via GitHub Actions",
   "note": "team -> furthest stage reached. 0=out,1=group/R32,2=R16,3=QF,4=SF,5=Final,6=Champion. groupPositions: actual finishing rank (1-4) in the group stage.",
   "stages": {
@@ -9,7 +9,7 @@
     "Austria": 1,
     "Belgium": 1,
     "Bosnia and Herzegovina": 1,
-    "Brazil": 1,
+    "Brazil": 2,
     "Canada": 2,
     "Colombia": 1,
     "Croatia": 1,
