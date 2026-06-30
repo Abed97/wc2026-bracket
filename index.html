@@ -219,7 +219,9 @@ const ISO = {
   "Mexico":"mx","Morocco":"ma","Netherlands":"nl","New Zealand":"nz","Norway":"no",
   "Portugal":"pt","Qatar":"qa","Saudi Arabia":"sa","Scotland":"gb-sct","Senegal":"sn",
   "South Korea":"kr","Spain":"es","Sweden":"se","Switzerland":"ch","Turkey":"tr",
-  "United States":"us","Uruguay":"uy"
+  "United States":"us","Uruguay":"uy",
+  "Cape Verde":"cv","Curaçao":"cw","Haiti":"ht","Iraq":"iq","Jordan":"jo",
+  "Panama":"pa","Paraguay":"py","South Africa":"za","Tunisia":"tn","Uzbekistan":"uz"
 };
 function flag(team, cls){
   const c=ISO[team];
@@ -301,7 +303,16 @@ const VIEW_ROUNDS=[
   {key:"sf", label:"Semifinals",next:"fin"},
   {key:"fin",label:"Final",next:"champ"},
 ];
-const TEAMS=[...new Set(NAMES.flatMap(n=>PLAYERS[n].r32))].sort();
+// Every team that should appear in the results grid: all participant picks PLUS every team
+// present in the loaded results (so real WC teams nobody picked — e.g. Paraguay — still show).
+function allTeams(){
+  return [...new Set([
+    ...NAMES.flatMap(n=>PLAYERS[n].r32),
+    ...Object.keys(auto),
+    ...Object.keys(autoPos),
+    ...Object.keys(overrides)
+  ])].sort();
+}
 
 /* ---------- edit lock (password-protected changes) ---------- */
 const PW="1997";
@@ -447,7 +458,7 @@ function renderScorecard(){
 /* ---------- results entry ---------- */
 function renderTeams(){
   const g=document.getElementById("teamgrid");
-  g.innerHTML=TEAMS.map(t=>{
+  g.innerHTML=allTeams().map(t=>{
     const cur=stageOf(t), isOvr=(t in overrides);
     const opts=STAGES.map(s=>`<option value="${s.v}" ${s.v===cur?'selected':''}>${s.label}</option>`).join("");
     return `<div class="teamrow ${cur>0?'live':''} ${isOvr?'ovr':''}">

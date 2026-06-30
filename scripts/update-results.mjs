@@ -15,7 +15,10 @@ const ABBR = {
   URU:'Uruguay', URY:'Uruguay', TUR:'Turkey', IRN:'Iran', IRI:'Iran', SUI:'Switzerland',
   CHE:'Switzerland', EGY:'Egypt', POR:'Portugal', PRT:'Portugal', GHA:'Ghana', SCO:'Scotland',
   ALG:'Algeria', DZA:'Algeria', QAT:'Qatar', NZL:'New Zealand', KSA:'Saudi Arabia',
-  SAU:'Saudi Arabia', COD:'DR Congo'
+  SAU:'Saudi Arabia', COD:'DR Congo',
+  // remaining 2026 qualifiers (were previously unmapped and silently dropped)
+  CPV:'Cape Verde', CUW:'Curaçao', HAI:'Haiti', IRQ:'Iraq', JOR:'Jordan',
+  PAN:'Panama', PAR:'Paraguay', RSA:'South Africa', TUN:'Tunisia', UZB:'Uzbekistan'
 };
 const CANON = [...new Set(Object.values(ABBR))];
 
@@ -32,10 +35,19 @@ const NAME = {
 };
 for (const t of CANON) NAME[norm(t)] = t;
 
+// bracket placeholders for undecided matches ("Round of 16 3 Winner", "Quarterfinal 1 Winner",
+// "Group A Runner-up", "TBD", ...) — these are NOT real teams and must never be recorded.
+const PLACEHOLDER = /\d|winner|loser|runner|\btbd\b|play-?off|round of|quarter|semi|\bfinal\b|group\s+[a-l]\b/i;
 function resolve(c){
   const ab = (c?.team?.abbreviation||'').toUpperCase();
   if (ABBR[ab]) return ABBR[ab];
-  return NAME[norm(c?.team?.displayName||c?.team?.name)] || null;
+  const dn = c?.team?.displayName || c?.team?.name || '';
+  const byName = NAME[norm(dn)];
+  if (byName) return byName;
+  // Never silently drop a REAL team: fall back to its display name so EVERY World Cup team is
+  // recorded, even ones no participant picked (e.g. Paraguay) — but skip bracket placeholders.
+  if (dn && !PLACEHOLDER.test(dn)) return dn;
+  return null;
 }
 
 // season.slug -> furthest stage that appearing in such a match implies
