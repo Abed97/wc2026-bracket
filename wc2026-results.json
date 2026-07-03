@@ -1,5 +1,5 @@
 {
-  "lastUpdated": "2026-07-02T03:46:59.371Z",
+  "lastUpdated": "2026-07-03T10:11:00.839Z",
   "source": "ESPN public API (site.api.espn.com) via GitHub Actions",
   "note": "team -> furthest stage reached. 0=out,1=group/R32,2=R16,3=QF,4=SF,5=Final,6=Champion. groupPositions: actual finishing rank (1-4) in the group stage.",
   "stages": {
@@ -28,13 +28,13 @@
     "Netherlands": 1,
     "Norway": 2,
     "Paraguay": 2,
-    "Portugal": 1,
+    "Portugal": 2,
     "Senegal": 1,
     "South Africa": 1,
     "South Korea": 1,
-    "Spain": 1,
+    "Spain": 2,
     "Sweden": 1,
-    "Switzerland": 1,
+    "Switzerland": 2,
     "United States": 2
   },
   "groupPositions": {
