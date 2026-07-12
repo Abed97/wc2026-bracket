@@ -122,4 +122,18 @@ const out = {
   groupPositions: Object.fromEntries(Object.entries(mergedPos).sort())
 };
 await writeFile('wc2026-results.json', JSON.stringify(out, null, 2) + '\n');
+
+// Keep the embedded fallback snapshot in index.html in sync, so scoring still works when the
+// page is opened without being able to fetch wc2026-results.json (e.g. as a local file://).
+try {
+  const html = await readFile('index.html', 'utf8');
+  const re = /(<script id="results-data" type="application\/json">)[\s\S]*?(<\/script>)/;
+  if (re.test(html)) {
+    const updated = html.replace(re, `$1\n${JSON.stringify(out)}\n$2`);
+    if (updated !== html) { await writeFile('index.html', updated); console.log('Updated embedded results snapshot in index.html.'); }
+  } else {
+    console.log('Warning: results-data snapshot block not found in index.html.');
+  }
+} catch (e) { console.log('Could not update embedded snapshot:', e.message); }
+
 console.log(`Scanned ${scanned} days; ${Object.keys(stages).length} stage-teams; ${Object.keys(mergedPos).length} group positions; ${Object.keys(out.stages).length} total stages in file.`);
