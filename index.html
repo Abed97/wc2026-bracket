@@ -156,9 +156,56 @@
 
   .foot{text-align:center; color:var(--muted); font-size:12px; margin-top:34px; line-height:1.7}
   a{color:var(--accent)}
+
+  /* champion celebration overlay */
+  .celebrate{position:fixed; inset:0; z-index:1000; display:flex; align-items:center; justify-content:center;
+    background:radial-gradient(1200px 700px at 50% 30%, #0e3a26ee, #05120cf7); backdrop-filter:blur(3px);
+    animation:celebFade .4s ease}
+  .celebrate[hidden]{display:none}
+  @keyframes celebFade{from{opacity:0}to{opacity:1}}
+  #confetti{position:absolute; inset:0; width:100%; height:100%; pointer-events:none}
+  .celebrate-card{position:relative; z-index:2; text-align:center; padding:34px 40px 38px; max-width:min(92vw,480px);
+    border-radius:22px; border:1px solid var(--gold);
+    background:linear-gradient(180deg,#154732,#0c2a1c);
+    box-shadow:0 24px 80px #000b, 0 0 0 1px #ffd24a33, 0 0 60px #ffd24a22;
+    animation:celebPop .5s cubic-bezier(.2,1.3,.4,1)}
+  @keyframes celebPop{from{transform:scale(.8) translateY(12px); opacity:0}to{transform:none; opacity:1}}
+  .celebrate-x{position:absolute; top:10px; right:12px; width:34px; height:34px; border-radius:50%;
+    border:1px solid var(--line); background:#0c241a; color:var(--text); font-size:20px; line-height:1;
+    cursor:pointer; display:flex; align-items:center; justify-content:center; transition:.15s}
+  .celebrate-x:hover{border-color:var(--accent2); color:var(--accent2); transform:rotate(90deg)}
+  .celebrate-kick{font-size:12px; letter-spacing:3px; text-transform:uppercase; color:var(--gold); font-weight:800}
+  .celebrate-flag{margin:16px 0 6px}
+  .celebrate-flag .flag{width:104px; height:76px; border-radius:8px; box-shadow:0 6px 22px #000a}
+  .celebrate-name{font-size:34px; font-weight:900; margin:2px 0; text-shadow:0 3px 18px #000a}
+  .celebrate-trophy{font-size:56px; line-height:1; margin:6px 0 4px; filter:drop-shadow(0 6px 14px #000a);
+    animation:celebBob 2.2s ease-in-out infinite}
+  @keyframes celebBob{0%,100%{transform:translateY(0) rotate(-4deg)}50%{transform:translateY(-8px) rotate(4deg)}}
+  .celebrate-title{font-size:15px; color:var(--muted); font-weight:700; letter-spacing:1px}
+  .celebrate-sub{margin-top:14px; font-size:14px; color:var(--muted)}
+  .celebrate-sub b{color:var(--text)}
+  .celebrate-sub .lead{display:inline-flex; align-items:center; gap:8px; margin-top:8px; padding:7px 14px; border-radius:999px;
+    background:#0a2218; border:1px solid var(--line); font-size:14px; color:var(--text)}
+  @media (prefers-reduced-motion:reduce){
+    .celebrate,.celebrate-card,.celebrate-trophy{animation:none}
+  }
 </style>
 </head>
 <body>
+<!-- Champion celebration — auto-shows once the results record a World Cup winner (a team at
+     the champion stage). Confetti + an X to dismiss. -->
+<div class="celebrate" id="celebrate" hidden>
+  <canvas id="confetti"></canvas>
+  <div class="celebrate-card">
+    <button class="celebrate-x" id="celebrateX" aria-label="Close celebration" title="Close">×</button>
+    <div class="celebrate-kick">World Cup 2026 · Champions</div>
+    <div class="celebrate-flag" id="celebrateFlag"></div>
+    <div class="celebrate-name" id="celebrateName"></div>
+    <div class="celebrate-trophy">🏆</div>
+    <div class="celebrate-title">are the champions of the world</div>
+    <div class="celebrate-sub" id="celebrateSub"></div>
+  </div>
+</div>
 <div class="wrap">
   <header>
     <div class="kick">USA · Canada · Mexico</div>
@@ -511,7 +558,7 @@ async function loadAuto(){
     if(!Object.keys(auto).length) loadFallback();         // otherwise fall back to the embedded snapshot
     autoMeta.source=(autoMeta.source||"embedded snapshot")+" · live refresh unavailable";
   }
-  renderStatus(); renderBoard(); renderTeams(); renderBracketView();
+  renderStatus(); renderBoard(); renderTeams(); renderBracketView(); maybeCelebrate();
 }
 
 /* ---------- scoring config ---------- */
@@ -538,6 +585,60 @@ document.getElementById("clearBtn").addEventListener("click",()=>{
   if(confirm("Clear your manual overrides? (auto-loaded results stay)")){ overrides={}; save(); renderTeams(); renderBoard(); renderBracketView(); renderStatus(); }
 });
 document.getElementById("refreshBtn").addEventListener("click",loadAuto);
+
+/* ---------- champion celebration ---------- */
+let confettiRAF=null;
+function launchConfetti(){
+  const canvas=document.getElementById("confetti"); if(!canvas) return;
+  const ctx=canvas.getContext("2d"); const dpr=window.devicePixelRatio||1;
+  let W=0,H=0;
+  const dim=()=>{ W=canvas.clientWidth||document.documentElement.clientWidth||window.innerWidth||800;
+                  H=canvas.clientHeight||document.documentElement.clientHeight||window.innerHeight||600; };
+  const resize=()=>{ dim(); canvas.width=W*dpr; canvas.height=H*dpr; ctx.setTransform(dpr,0,0,dpr,0,0); };
+  resize(); window.addEventListener("resize",resize);
+  const colors=["#2dd47e","#f4c542","#ff6b6b","#3aa0ff","#c084fc","#ffd24a","#ffffff"];
+  const P=Array.from({length:180},()=>({
+    x:Math.random()*W, y:Math.random()*-H, r:4+Math.random()*6,
+    c:colors[(Math.random()*colors.length)|0], vy:2+Math.random()*4, vx:-2+Math.random()*4,
+    rot:Math.random()*Math.PI, vr:-0.2+Math.random()*0.4, round:Math.random()<0.5
+  }));
+  const frame=()=>{
+    ctx.clearRect(0,0,W,H);
+    for(const p of P){
+      p.x+=p.vx; p.y+=p.vy; p.rot+=p.vr;
+      if(p.y>H+20){ p.y=-20; p.x=Math.random()*W; }
+      ctx.save(); ctx.translate(p.x,p.y); ctx.rotate(p.rot); ctx.fillStyle=p.c;
+      if(p.round){ ctx.beginPath(); ctx.arc(0,0,p.r/1.7,0,7); ctx.fill(); }
+      else ctx.fillRect(-p.r/2,-p.r/2,p.r,p.r*1.6);
+      ctx.restore();
+    }
+    confettiRAF=requestAnimationFrame(frame);
+  };
+  confettiRAF=requestAnimationFrame(frame);
+}
+function stopConfetti(){ if(confettiRAF){ cancelAnimationFrame(confettiRAF); confettiRAF=null; } }
+function findChampion(){ for(const t of allTeams()) if(stageOf(t)>=6) return t; return null; }
+function maybeCelebrate(){
+  const champ=findChampion();
+  if(!champ) return;                                             // no World Cup winner recorded yet
+  if(localStorage.getItem("wc26_celebrated")===champ) return;    // already dismissed for this champion
+  const el=document.getElementById("celebrate"); if(!el || !el.hidden) return;
+  document.getElementById("celebrateFlag").innerHTML=flag(champ,"lg");
+  document.getElementById("celebrateName").textContent=champ;
+  const rows=NAMES.map(n=>({n,...scorePlayer(n)})).sort((a,b)=>b.total-a.total);
+  document.getElementById("celebrateSub").innerHTML=rows.length
+    ? `<span class="lead">🏅 Pool winner: <b>${rows[0].n}</b> · ${rows[0].total} pts</span>` : "";
+  el.hidden=false; launchConfetti();
+}
+function closeCelebration(){
+  const el=document.getElementById("celebrate"); if(!el || el.hidden) return;
+  el.hidden=true; stopConfetti();
+  const champ=document.getElementById("celebrateName").textContent;
+  if(champ) localStorage.setItem("wc26_celebrated",champ);       // don't auto-reopen once dismissed
+}
+document.getElementById("celebrateX").addEventListener("click",closeCelebration);
+document.getElementById("celebrate").addEventListener("click",e=>{ if(e.target.id==="celebrate") closeCelebration(); });
+document.addEventListener("keydown",e=>{ if(e.key==="Escape") closeCelebration(); });
 
 /* ---------- init ---------- */
 loadFallback();   // seed with the embedded snapshot so the first paint already has scores
